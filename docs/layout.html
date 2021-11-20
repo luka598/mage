@@ -1,0 +1,42 @@
+<h1>Datatypes</h1>
+
+<h2>datapoint</h2>
+
+<pre><code>- ((data), (data))
+- next_dps
+- count
+- match()
+- rank_next_dp(context)
+- update()
+</code></pre>
+
+<h2>next_dp</h2>
+
+<pre><code>- ((data), (data))
+- {(context): context}
+- count
+- match()
+- match_contexts()
+</code></pre>
+
+<h2>context_dp</h2>
+
+<pre><code>- (data)
+- count
+- match()
+</code></pre>
+
+<h1>Usage</h1>
+
+<h2>Adding/updating a datapoint</h2>
+
+<p><code>py
+data = [[data],[data]]
+next = [[data],[data]]
+context = {"name": (data), "name": (data)}
+if data in datapoints:
+    datapoints[data].update(next, context)
+else:
+    dp = datapoint(data)
+    dp.update(next, context)
+</code></p>
