@@ -10,6 +10,13 @@ def make_immutable(data):
 	new_data = tuple(new_data)
 	return new_data
 
+def make_mutable(data):
+	new_data = []
+	for i in data:
+		new_data.append(list(i))
+	new_data = list(new_data)
+	return new_data
+
 def valid_data(data):
 	if type(data) != type(tuple()):
 		return False

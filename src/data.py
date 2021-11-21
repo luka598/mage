@@ -1,4 +1,4 @@
-from tools import correct_data, correct_context
+from tools import correct_data, correct_context, make_mutable
 
 class match():
 	def __init__(self) -> None:
@@ -34,21 +34,34 @@ class model():
 			matches.add_match(1, data)
 			if return_first:
 				return matches
+		return matches
 
 	def rank_dp(self):
 		assert False, "Not implemented"
 
 	def add(self, data):
 		data = correct_data(data)
-		assert self.match_datapoint(data) is not None, "That data alredy exsists"
+		assert self.match_datapoint(data).exact() is None, f"Can't add {data}, that data alredy exsists"
 		self.model[data] = datapoint(data)
 		return
 
 	def update(self, data, next_data, context):
 		data = correct_data(data)
-		assert self.match_datapoint(data) is None, "That data does not exsists"
+		assert self.match_datapoint(data).exact() is not None, "That data does not exsists"
 		self.model[data].update(next_data, context)
 		return
+
+	def json(self):
+		json = '{'
+		for key in self.model:
+			json += f'"{str(key)}":{self.model[key].json()},'
+		json = json[:-1]
+		json += '}'
+
+		return json
+
+	def __str__(self):
+		return self.json()
 
 
 class datapoint():
@@ -72,10 +85,24 @@ class datapoint():
 
 	def update(self, next_data, context):
 		next_data = correct_data(next_data)
-		if self.match_next_dp(next_data) is None:
+		if self.match_next_dp(next_data).exact() is None:
 			self.next_dps[next_data] = next_datapoint(next_data)
 		self.next_dps[next_data].update(context)
 		return
+
+	def json(self):
+		next_dps = '{'
+		for key in self.next_dps:
+			next_dps += f'"{str(key)}":{self.next_dps[key].json()},'
+		next_dps = next_dps[:-1]
+		next_dps += '}'
+		return f'{{"data":{str(make_mutable(self.data))},"next_dps":{next_dps},"count":{self.count}}}'
+
+	def __str__(self):
+		return self.json()
+
+	def __repr__(self):
+		return self.__str__()
 
 class next_datapoint():
 	def __init__(self, data) -> None:
@@ -97,6 +124,21 @@ class next_datapoint():
 			else:
 				self.context[context_id] = context_datapoint(context_id, context)
 
+	def json(self):
+		context = '{'
+		for key in self.context:
+			context += f'"{str(key)}":{self.context[key].json()},'
+		context = context[:-1]
+		context += '}'
+		json = f'{{"data":{str(make_mutable(self.data))},"context":{context},"count":{self.count}}}'
+		return json
+
+	def __str__(self):
+		return self.json()
+
+	def __repr__(self):
+		return self.__str__()
+
 class context_datapoint():
 	def __init__(self, id, context) -> None:
 		self.id = id
@@ -115,3 +157,18 @@ class context_datapoint():
 		if context[self.id] not in self.data:
 			self.data.append(context[self.id])
 		return
+
+	def json(self):
+		data = '['
+		for dp in self.data:
+			data += f'"{str(dp)}",'
+		data = data[:-1]
+		data += ']'
+		json = f'{{"id":"{str(self.id)}","data":{data},"count":{self.count}}}'
+		return json
+
+	def __str__(self):
+		return self.json()
+
+	def __repr__(self):
+		return self.__str__()
