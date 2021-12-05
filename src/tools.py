@@ -38,3 +38,21 @@ def correct_context(context):
 	for context_id in context:
 		context_id = tuple(context[context_id])
 	return context
+
+def partial_ordered_match(a, b):
+	matched = 0
+	n = 0
+	for aa, bb in zip(a,b):
+		temp_matched = 0
+		temp_n = 0
+		for aaa, bbb in zip(aa, bb):
+			if aaa == bbb:
+				temp_matched += 1
+			temp_n += 1
+		matched += temp_matched/temp_n
+		n += 1
+	
+	if n == 0:
+		return 0
+	else:
+		return matched/n

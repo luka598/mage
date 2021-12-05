@@ -1,8 +1,10 @@
-from tools import correct_data, correct_context, make_mutable
+#pyright: reportGeneralTypeIssues=false
+from tools import correct_data, correct_context, make_mutable, partial_ordered_match
+from copy import deepcopy, copy
 
 class match():
 	def __init__(self) -> None:
-		self.matches = {1: []}
+		self.matches = {0:[]}
 		return
 
 	def add_match(self, match_p, data):
@@ -14,21 +16,33 @@ class match():
 		return False
 
 	def exact(self):
-		if 1 > len(self.matches[1]):
-			return None
+		if 1 in self.matches.keys():
+			if 1 > len(self.matches[1]):
+				return None
+			else:
+				return self.matches[1][0]
 		else:
-			return self.matches[1][0]
+			return None
 
 	def max(self):
 		return max(self.matches.keys())
+
+	def positive(self):
+		matches = deepcopy(self.matches)
+		return matches.remove(0)
+
+
+	def __str__(self):
+		return str(self.matches)
+
+	def __repr__(self) -> str:
+	    return self.__str__()
 
 class model():
 	def __init__(self) -> None:
 		self.model = {}
 
-	def match_datapoint(self, data, return_first = True):
-		data = correct_data(data)
-
+	def _exact_match(self, data, return_first=True):
 		matches = match()
 		if data in self.model.keys():
 			matches.add_match(1, data)
@@ -36,18 +50,34 @@ class model():
 				return matches
 		return matches
 
-	def rank_dp(self):
+	def _partial_match(self, data):
+		matches = match()
+		for key in self.model.keys():
+			match_p = partial_ordered_match(key, data)
+			matches.add_match(match_p, key)
+		return matches
+
+	def match_datapoint(self, data, first=False, partial=False):
+		data = correct_data(data)
+		matches = match()
+		if first:
+			matches = self._exact_match(data)
+		if partial:
+			matches = self._partial_match(data)
+		return matches
+
+	def rank_dp(self, matches):
 		assert False, "Not implemented"
 
 	def add(self, data):
 		data = correct_data(data)
-		assert self.match_datapoint(data).exact() is None, f"Can't add {data}, that data alredy exsists"
+		assert self.match_datapoint(data, first=True).exact() is None, f"Can't add {data}, that data alredy exsists"
 		self.model[data] = datapoint(data)
 		return
 
 	def update(self, data, next_data, context):
 		data = correct_data(data)
-		assert self.match_datapoint(data).exact() is not None, "That data does not exsists"
+		assert self.match_datapoint(data, first=True).exact() is not None, "That data does not exsists"
 		self.model[data].update(next_data, context)
 		return
 
@@ -71,12 +101,17 @@ class datapoint():
 		self.count = 0
 		return
 
-	def match_next_dp(self, data, return_first=True):
+	def _exact_match(self, context):
 		matches = match()
-		if data in self.next_dps.keys():
-			matches.add_match(1, data)
-			if return_first:
-				return matches
+		for next_dp in self.next_dps:
+			match_p = self.next_dps[next_dp].match_contexts(context, exact=True)
+			matches.add_match(match_p, next_dp)
+		return matches
+
+	def match_next_dp(self, context, exact=False, partial=False):
+		matches = match()
+		if exact:
+			matches = self._exact_match(context)
 		return matches
 
 	def rank_next_dp(self, context):
@@ -113,8 +148,16 @@ class next_datapoint():
 	def match(self):
 		assert False, "Not implemented"
 
-	def match_contexts(self):
-		assert False, "Not implemented"
+	def match_contexts(self, context, exact):
+		matches = 0
+		n = 0
+		for context_id in self.context:
+			matches += self.context[context_id].match(context, exact=exact).max()
+			n += 1
+		if n == 0:
+			return 0
+		else:
+			return matches/n
 
 	def update(self, context):
 		context = correct_context(context)
@@ -146,11 +189,17 @@ class context_datapoint():
 		self.count = 0
 		return
 
-	def match_contexts(self, context):
-		match = match()
+	def _exact_match(self, context):
+		matches = match()
 		if context[self.id] in self.data:
-			match.add_match(1, context[self.id])
-		return match
+			matches.add_match(1, context[self.id])
+		return matches
+
+	def match(self, context, exact=False, partial=False):
+		matches = match()
+		if exact:
+			matches = self._exact_match(context)
+		return matches
 
 	def update(self, context):
 		context = correct_context(context)

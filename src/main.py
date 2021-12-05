@@ -10,5 +10,10 @@ for i in data:
 	mm.add(_data)
 	mm.update(_data, _next, _context)
 
-print(data)
-print(mm)
+#print(data)
+#print(mm)
+
+#data = ((1,),)
+#x = mm.match_datapoint(data, partial=True).exact()
+x = mm.model[((2,),)].match_next_dp({"back": (1,)}, exact=True)
+print(x)
